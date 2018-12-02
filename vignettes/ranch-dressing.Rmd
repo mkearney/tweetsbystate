@@ -1,0 +1,69 @@
+---
+title: "Vignette Title"
+author: "Vignette Author"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+```{r}
+## load packages
+library(tweetsbystate)
+library(tidyverse)
+
+## get tweets about ranch dressing
+r <- search_tweets_geo("\"ranch dressing\" OR ranchdressing")
+
+## summarise sentiment by state
+ss <- r %>%
+  filter(!state %in% c("AK", "HI")) %>%
+  group_by(state) %>%
+  summarise(sent = mean(sent, na.rm = TRUE)) %>%
+  arrange(-sent) %>%
+  mutate(state.full = state.name[match(state, state.abb)]) %>%
+  filter(!is.na(state_full)) %>%
+  ungroup() %>%
+  arrange(state) %>%
+  select(state.abb = state)
+
+## function to generate colors for map
+colorize <- function(x) {
+  if (any(x < 0)) x <- x - min(x)
+  x <- x / max(x)
+  x <- round(x * 100, 0)
+  x[x == 0] <- 1
+  cols <- colorRampPalette(c("#e2e4ea", "#2244aa"), space = "Lab")(150)
+  cols <- cols[c(1:50, 101:150)]
+  cols[x]
+}
+
+## one version of map just to get the names
+p <- maps::map("state", fill = TRUE, lwd = .1, col = "white", bg = "#c3c6cf")
+
+## match names for next version of plot
+pn <- sub(":.*", "", p$names)
+sss <- ss$sent[match(pn, tolower(ss$state.name))]
+sss[is.na(sss)] <- 0
+
+## save states plot image
+png("states-ranch.png", width = 8, height = 5, units = "in", res = 300)
+par(mar = c(0, 0, 1, 0), fg = "white")
+maps::map("state", fill = TRUE, lwd = .25,
+  col = colorize(sss),
+  bg = "white", mar = c(0, 0, 6, 0))
+mtext("Which states like ranch dressing the most?", side = 3, col = "black",
+  family = "Avenir Next Bold", cex = 2, line = .85, adj = .33)
+dev.off()
+```
+
