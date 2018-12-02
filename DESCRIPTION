@@ -23,3 +23,5 @@ Suggests:
     rmarkdown
 VignetteBuilder: knitr
 RoxygenNote: 6.1.0
+URL: https://github.com/mkearney/tweetsbystate
+BugReports: https://github.com/mkearney/tweetsbystate/issues
